@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHESS LIKE GAME</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(5, 60px);
+            grid-template-rows: repeat(5, 60px);
+            gap: 2px;
+            margin: 0 auto;
+            background-color: #333;
+            border-radius: 8px;
+            width: fit-content;
+            height: fit-content;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .cell:nth-child(odd) {
+            background-color: #ddd;
+        }
+        .cell:nth-child(even) {
+            background-color: #eee;
+        }
+        .cell:hover {
+            background-color: #ccc;
+        }
+        #turn {
+            font-weight: bold;
+        }
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>CHESS LIKE GAME</h1>
+    <div id="board"></div>
+    <p>Current Turn: <span id="turn"></span></p>
+    <footer>
+        &copy; 2024 Sayan Sahu
+    </footer>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const board = document.getElementById('board');
+        const turnDisplay = document.getElementById('turn');
+
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'gameState') {
+                updateBoard(msg.data.board);
+                turnDisplay.textContent = msg.data.currentPlayer;
+            } else if (msg.type === 'error') {
+                alert(msg.message);
+            }
+        };
+
+        function updateBoard(boardData) {
+            if (!boardData || !Array.isArray(boardData) || boardData.length !== 5 || !boardData.every(row => Array.isArray(row) && row.length === 5)) {
+                console.error('Invalid board data');
+                return;
+            }
+
+            board.innerHTML = '';
+            boardData.forEach((row, rowIndex) => {
+                row.forEach((cell, cellIndex) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    cellDiv.textContent = cell || '';
+                    cellDiv.onclick = () => makeMove(rowIndex, cellIndex);
+                    board.appendChild(cellDiv);
+                });
+            });
+        }
+
+        function makeMove(row, col) {
+            ws.send(JSON.stringify({ type: 'move', row, col }));
+        }
+    </script>
+</body>
+</html>
